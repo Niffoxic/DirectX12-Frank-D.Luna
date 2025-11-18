@@ -1,4 +1,8 @@
-#include <windows.h>
+#include "application/application.h"
+#include "framework/exception/win_exception.h"
+
+#include "framework/framework.h"
+#include "framework/windows_manager/windows_manager.h"
 
 
 int WINAPI WinMain(_In_		HINSTANCE hInstance,
@@ -11,10 +15,39 @@ int WINAPI WinMain(_In_		HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
-	MessageBox(nullptr,
-			   L"Check",
-			   L"Working fine right",
-			   MB_OK);
+    try
+    {
+        framework::DX12_WINDOWS_MANAGER_CREATE_DESC WindowsDesc{};
+        WindowsDesc.Height      = 720u;
+        WindowsDesc.Width       = 1280u;
+        WindowsDesc.IconId      = 0u;
+        WindowsDesc.WindowTitle = L"DirectX 12 Application";
+        WindowsDesc.ScreenState = framework::EScreenState::Windowed;
 
-	return S_OK;
+        framework::DX_FRAMEWORK_CONSTRUCT_DESC engineDesc{};
+        engineDesc.WindowsDesc = WindowsDesc;
+
+        framework::Application application{ engineDesc };
+
+        if (!application.Init()) return E_FAIL;
+
+        return application.Execute();
+    }
+    catch (const framework::BaseException& ex)
+    {
+        std::wstring msg(ex.what(), ex.what() + std::strlen(ex.what()));
+        MessageBox(nullptr, msg.c_str(), L"PixelFox Exception", MB_ICONERROR | MB_OK);
+        return EXIT_FAILURE;
+    }
+    catch (const std::exception& ex)
+    {
+        std::wstring msg(ex.what(), ex.what() + std::strlen(ex.what()));
+        MessageBox(nullptr, msg.c_str(), L"Standard Exception", MB_ICONERROR | MB_OK);
+        return EXIT_FAILURE;
+    }
+    catch (...)
+    {
+        MessageBox(nullptr, L"Unknown fatal error occurred.", L"PixelFox Crash", MB_ICONERROR | MB_OK);
+        return EXIT_FAILURE;
+    }
 }

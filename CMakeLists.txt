@@ -14,22 +14,29 @@ file(GLOB_RECURSE SRC_FILES
     "src/*.h"
 )
 
-add_executable (DirectX12 WIN32 ${SRC_FILES})
+add_executable (application WIN32 ${SRC_FILES})
 
 # Properties
-set_property(TARGET DirectX12 PROPERTY CXX_STANDARD 20)
-set_property(TARGET DirectX12 PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET application PROPERTY CXX_STANDARD 20)
+set_property(TARGET application PROPERTY CXX_STANDARD_REQUIRED ON)
 
-target_compile_definitions(DirectX12 PRIVATE
+target_compile_definitions(application PRIVATE
     WIN32_LEAN_AND_MEAN
     NOMINMAX
     UNICODE
     _UNICODE
 )
 
-target_link_libraries(DirectX12 PRIVATE
+target_link_libraries(application PRIVATE
     user32
     dxgi
     d3d12
     dxguid
+)
+
+# structure
+target_include_directories(
+    application
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src 
 )
