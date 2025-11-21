@@ -23,5 +23,4 @@ namespace framework
 	void Application::Tick(float deltaTime)
 	{
 	}
-
 }

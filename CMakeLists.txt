@@ -32,6 +32,7 @@ target_link_libraries(application PRIVATE
     dxgi
     d3d12
     dxguid
+    D3DCompiler
 )
 
 # structure
