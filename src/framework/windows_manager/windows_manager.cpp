@@ -8,50 +8,6 @@
 
 using namespace framework;
 
-namespace
-{
-	_Function_class_(WINDOWS_CALLBACK)
-	static LRESULT CALLBACK WindowProcThunk(
-		_In_ HWND   hwnd,
-		_In_ UINT   msg,
-		_In_ WPARAM wParam,
-		_In_ LPARAM lParam)
-	{
-		if (auto that = reinterpret_cast<DxWindowsManager*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)))
-		{
-			return that->MessageHandler(hwnd, msg, wParam, lParam);
-		}
-		return DefWindowProc(hwnd, msg, wParam, lParam);
-	}
-
-	_Function_class_(WINDOWS_CALLBACK)
-	static LRESULT CALLBACK WindowProcSetup(
-		_In_ HWND   hwnd,
-		_In_ UINT   message,
-		_In_ WPARAM wParam,
-		_In_ LPARAM lParam)
-	{
-		if (message == WM_NCCREATE)
-		{
-			CREATESTRUCT* create = reinterpret_cast<CREATESTRUCT*>(lParam);
-			DxWindowsManager* that = reinterpret_cast<DxWindowsManager*>(create->lpCreateParams);
-
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(that));
-			SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&WindowProcThunk));
-
-			return that->MessageHandler(hwnd, message, wParam, lParam);
-		}
-
-		return DefWindowProc(hwnd, message, wParam, lParam);
-	}
-} // namespace anonymous
-
-DxWindowsManager::DxWindowsManager()
-{
-	m_pKeyboard = std::make_unique<DxKeyboardInputs>();
-	m_pMouse    = std::make_unique<DxMouseInputs>();
-}
-
 DxWindowsManager::~DxWindowsManager()
 {
 	if (!Release())
@@ -62,7 +18,6 @@ DxWindowsManager::~DxWindowsManager()
 
 _Use_decl_annotations_
 DxWindowsManager::DxWindowsManager(const DX12_WINDOWS_MANAGER_CREATE_DESC& desc)
-	: DxWindowsManager()
 {
 	m_config.Height		 = desc.Height;
 	m_config.Width		 = desc.Width;
@@ -97,7 +52,7 @@ bool DxWindowsManager::Initialize()
 	
 	if (auto handle = GetWindowsHandle())
 	{
-		if (m_pMouse) m_pMouse->AttachWindowHandle(handle);
+		Mouse.AttachWindowHandle(handle);
 	}
 	return true;
 }
@@ -111,14 +66,14 @@ bool DxWindowsManager::Release() noexcept
 _Use_decl_annotations_
 void DxWindowsManager::OnFrameBegin(float deltaTime) noexcept
 {
-	if (m_pKeyboard) m_pKeyboard->OnFrameBegin(deltaTime);
-	if (m_pMouse)	 m_pMouse	->OnFrameBegin(deltaTime);
+	Keyboard.OnFrameBegin(deltaTime);
+	Mouse	.OnFrameBegin(deltaTime);
 }
 
 void DxWindowsManager::OnFrameEnd() noexcept
 {
-	if (m_pKeyboard) m_pKeyboard->OnFrameEnd();
-	if (m_pMouse)	 m_pMouse   ->OnFrameEnd();
+	Keyboard.OnFrameEnd();
+	Mouse   .OnFrameEnd();
 }
 
 _Use_decl_annotations_
@@ -131,18 +86,6 @@ _Use_decl_annotations_
 HINSTANCE DxWindowsManager::GetWindowsInstance() const noexcept
 {
 	return m_pWindowsInstance;
-}
-
-_Use_decl_annotations_
-DxKeyboardInputs* framework::DxWindowsManager::GetKeyboard() const
-{
-	return m_pKeyboard.get();
-}
-
-_Use_decl_annotations_
-DxMouseInputs* framework::DxWindowsManager::GetMouse() const
-{
-	return m_pMouse.get();
 }
 
 _Use_decl_annotations_
@@ -210,7 +153,7 @@ bool DxWindowsManager::InitWindowScreen()
 	WNDCLASSEX wc{};
 	wc.cbSize	   = sizeof(WNDCLASSEX);
 	wc.style	   = CS_OWNDC;
-	wc.lpfnWndProc = WindowProcSetup;
+	wc.lpfnWndProc = &WindowProcSetup;
 	wc.cbClsExtra  = 0;
 	wc.cbWndExtra  = sizeof(LONG_PTR);
 	wc.hInstance   = m_pWindowsInstance;
@@ -283,14 +226,8 @@ LRESULT DxWindowsManager::MessageHandler(HWND   hwnd,
 										 WPARAM wParam,
 										 LPARAM lParam) noexcept
 {
-	if (m_pKeyboard)
-	{
-		if (m_pKeyboard->ProcessMessage(message, wParam, lParam)) return S_OK;
-	}
-	if (m_pMouse)
-	{
-		if (m_pMouse->ProcessMessage(message, wParam, lParam)) return S_OK;
-	}
+	if (Keyboard.ProcessMessage(message, wParam, lParam)) return S_OK;
+	if (Mouse   .ProcessMessage(message, wParam, lParam)) return S_OK;
 
 	switch (message)
 	{
@@ -322,6 +259,41 @@ LRESULT DxWindowsManager::MessageHandler(HWND   hwnd,
 		return DefWindowProc(hwnd, message, wParam, lParam);
 	}
 	return S_OK;
+}
+
+_Use_decl_annotations_
+LRESULT framework::DxWindowsManager::WindowProcThunk(
+	HWND hwnd,
+	UINT msg,
+	WPARAM wParam,
+	LPARAM lParam) noexcept
+{
+	if (auto that = reinterpret_cast<DxWindowsManager*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)))
+	{
+		return that->MessageHandler(hwnd, msg, wParam, lParam);
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+_Use_decl_annotations_
+LRESULT framework::DxWindowsManager::WindowProcSetup(
+	HWND hwnd,
+	UINT message,
+	WPARAM wParam, 
+	LPARAM lParam)
+{
+	if (message == WM_NCCREATE)
+	{
+		CREATESTRUCT* create = reinterpret_cast<CREATESTRUCT*>(lParam);
+		DxWindowsManager* that = reinterpret_cast<DxWindowsManager*>(create->lpCreateParams);
+
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(that));
+		SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&WindowProcThunk));
+
+		return that->MessageHandler(hwnd, message, wParam, lParam);
+	}
+
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
 void DxWindowsManager::TransitionToFullScreen() noexcept

@@ -69,8 +69,8 @@ namespace framework
 		_Check_return_ _NODISCARD bool IsInside(_FOX_VK_VALID int virtualKey) const noexcept { return virtualKey >= 0 && virtualKey < MAX_KEYBOARD_INPUTS; }
 
 	private:
-		bool m_keyDown	  [ MAX_KEYBOARD_INPUTS ];
-		bool m_keyPressed [ MAX_KEYBOARD_INPUTS ];
-		bool m_keyReleased[ MAX_KEYBOARD_INPUTS ];
+		bool m_keyDown	  [ MAX_KEYBOARD_INPUTS ]{};
+		bool m_keyPressed [ MAX_KEYBOARD_INPUTS ]{};
+		bool m_keyReleased[ MAX_KEYBOARD_INPUTS ]{};
 	};
 } // namespace framework

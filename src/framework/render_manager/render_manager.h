@@ -10,12 +10,14 @@
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
 #include <wrl/client.h>
+#include <functional>
+#include <unordered_map>
 
 namespace framework
 {
 	class DxWindowsManager;
 
-	enum class EMsaaState: uint16_t
+	enum class EMsaaState: int
 	{
 		x1 = 0,
 		x2 = 2,
@@ -25,6 +27,7 @@ namespace framework
 
 	class DxRenderManager
 	{
+		using DrawCB = std::function<void(float)>;
 	public:
 		 DxRenderManager(DxWindowsManager* windows);
 		~DxRenderManager();
@@ -43,13 +46,24 @@ namespace framework
 		void OnFrameEnd  ();
 
 		//~ Getters
-		EMsaaState					GetMsaaState     () const noexcept;
-		ID3D12Resource*				GetBackBuffer    () const noexcept;
-		D3D12_CPU_DESCRIPTOR_HANDLE GetBackBufferView() const noexcept;
-		D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView () const noexcept;
+		EMsaaState					GetMsaaState		 () const noexcept;
+		ID3D12Resource*				GetBackBuffer		 () const noexcept;
+		D3D12_CPU_DESCRIPTOR_HANDLE GetBackBufferHandle  () const noexcept;
+		D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilHandle() const noexcept;
 
 		//~ Setters
 		void SetMsaaState(const EMsaaState state);
+		int  AddDrawCB(DrawCB&& cb);
+		void RemoveDrawCB(const int key);
+
+		//~ operations
+		void FlushCommandQueue();
+		void OnResize();
+
+		//~ helpers
+		void LogAdapters();
+		void LogAdapterOuputs(IDXGIAdapter* adapter);
+		void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
 	private:
 		//~ create resources
@@ -63,20 +77,8 @@ namespace framework
 		bool CreateDepthStencilViews			 ();
 		bool CreateViewport						 ();
 
-		//~ operations
-		void FlushCommandQueue();
-		void OnResize		  ();
-
-		//~ helpers
-		void LogAdapters();
-		void LogAdapterOuputs     (IDXGIAdapter* adapter);
-		void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
-
-	private:
+	public:
 		DxWindowsManager* m_pWindowsManager;
-
-		EMsaaState m_eMsaa { EMsaaState::x4 };
-		UINT m_nMsaaQuality{ 0u };
 
 		//~ resources
 	
@@ -114,5 +116,9 @@ namespace framework
 		UINT m_nRtvDescriptorSize	   { 0u };
 		UINT m_nDsvDescriptorSize	   { 0u };
 		UINT m_nCbvSrvUavDescriptorSize{ 0u };
+
+		//~ draw callbacks
+		std::unordered_map<int, DrawCB> m_drawCallbacks{};
+		inline static unsigned int DRAW_KEY_GEN{ 0 };
 	};
 } // namespace framework

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "framework/windows_manager/windows_manager.h"
+#include "framework/render_manager/render_manager.h"
 #include "utility/timer/timer.h"
 
 #include <memory>
@@ -48,6 +49,7 @@ namespace framework
 	protected:
 		GameTimer m_timer{};
 		std::unique_ptr<DxWindowsManager> m_pWindowsManager{ nullptr };
+		std::unique_ptr<DxRenderManager>  m_pRenderManager { nullptr };
 
 	private:
 		bool m_bEnginePaused{ false };

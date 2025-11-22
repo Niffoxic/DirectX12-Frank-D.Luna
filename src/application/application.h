@@ -1,6 +1,8 @@
 #pragma once
 
 #include "framework/framework.h"
+#include "layer/chapter_4/draw_init.h"
+#include <memory>
 
 namespace framework
 {
@@ -13,10 +15,13 @@ namespace framework
 	protected:
 		//~ Framework interface Impl
 		_NODISCARD _Check_return_
-			bool InitApplication() override;
+		bool InitApplication() override;
 		void BeginPlay() override;
 		void Release() override;
 
 		void Tick(_In_ float deltaTime) override;
+
+	private:
+		std::unique_ptr<InitDirectX> m_drawChapter4{ nullptr };
 	};
 }

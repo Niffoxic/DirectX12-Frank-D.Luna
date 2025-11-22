@@ -1,4 +1,4 @@
-#include "render_manager.h"
+﻿#include "render_manager.h"
 
 #include "framework/exception/dx_exception.h"
 #include "framework/windows_manager/windows_manager.h"
@@ -34,15 +34,20 @@ bool framework::DxRenderManager::Release()
 
 void framework::DxRenderManager::OnFrameBegin(float deltaTime)
 {
+	for (auto& [key, fn] : m_drawCallbacks)
+	{
+		fn(deltaTime);
+	}
 }
 
 void framework::DxRenderManager::OnFrameEnd()
 {
+	
 }
 
 EMsaaState framework::DxRenderManager::GetMsaaState() const noexcept
 {
-	return m_eMsaa;
+	return EMsaaState::x1;
 }
 
 ID3D12Resource* framework::DxRenderManager::GetBackBuffer() const noexcept
@@ -50,24 +55,37 @@ ID3D12Resource* framework::DxRenderManager::GetBackBuffer() const noexcept
 	return m_pSwapChainBuffer[m_nCurrentBackBuffer].Get();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE framework::DxRenderManager::GetBackBufferView() const noexcept
+D3D12_CPU_DESCRIPTOR_HANDLE framework::DxRenderManager::GetBackBufferHandle() const noexcept
 {
-	return D3D12_CPU_DESCRIPTOR_HANDLE();
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pRtvHeap->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += static_cast<SIZE_T>(m_nCurrentBackBuffer) * static_cast<SIZE_T>(m_nRtvDescriptorSize);
+	return handle;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE framework::DxRenderManager::DepthStencilView() const noexcept
+D3D12_CPU_DESCRIPTOR_HANDLE framework::DxRenderManager::GetDepthStencilHandle() const noexcept
 {
-	return D3D12_CPU_DESCRIPTOR_HANDLE();
+	return m_pDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void framework::DxRenderManager::SetMsaaState(const EMsaaState state)
 {
-	if (m_eMsaa == state) return;
-
-	m_eMsaa = state;
-
 	CreateSwapChain();
 	OnResize();
+}
+
+int framework::DxRenderManager::AddDrawCB(DrawCB&& cb)
+{
+	auto key = ++DRAW_KEY_GEN;
+	m_drawCallbacks[ key ] = std::move(cb);
+	return key;
+}
+
+void framework::DxRenderManager::RemoveDrawCB(const int key)
+{
+	if (m_drawCallbacks.contains(key))
+	{
+		m_drawCallbacks.erase(key);
+	}
 }
 
 bool framework::DxRenderManager::InitDirectX()
@@ -121,16 +139,19 @@ bool framework::DxRenderManager::ConfigureMSAA()
 	levels.Format			= m_backBufferFormat;
 	levels.Flags			= D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 	levels.NumQualityLevels = 0u;
-	levels.SampleCount		= static_cast<uint16_t>(m_eMsaa);
+	levels.SampleCount		= 1u;
 
-	THROW_DX_IF_FAILS(m_pDevice->CheckFeatureSupport(
+	HRESULT hr = m_pDevice->CheckFeatureSupport(
 		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
 		&levels,
 		sizeof(levels)
-	));
+	);
 
-	m_nMsaaQuality = levels.NumQualityLevels;
-	assert(m_nMsaaQuality > 0u && "MSAA quality level isnt valid!");
+	if (FAILED(hr))
+	{
+		logger::error("Failed to fetch feature level!");
+		return false;
+	}
 	return true;
 }
 
@@ -166,30 +187,30 @@ bool framework::DxRenderManager::CreateSwapChain()
 {
 	assert(m_pWindowsManager && "Cant create swapchain windows manager is null");
 
-	DXGI_SWAP_CHAIN_DESC desc{};
-	desc.Flags		  = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	desc.BufferCount  = 1u;
-	desc.Windowed	  = true;
-	desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.OutputWindow = m_pWindowsManager->GetWindowsHandle();
-	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	DXGI_SWAP_CHAIN_DESC1 sd{};
+	sd.Width = m_pWindowsManager->GetWindowsWidth();
+	sd.Height = m_pWindowsManager->GetWindowsHeight();
+	sd.Format = m_backBufferFormat;
+	sd.SampleDesc.Count = 1;
+	sd.SampleDesc.Quality = 0;
+	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.BufferCount = 2;
+	sd.Scaling = DXGI_SCALING_STRETCH;
+	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	sd.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+	sd.Flags = 0; // maybe ALLOW_TEARING if supported
 
-	desc.BufferDesc.Width					= m_pWindowsManager->GetWindowsWidth();
-	desc.BufferDesc.Height					= m_pWindowsManager->GetWindowsHeight();
-	desc.BufferDesc.RefreshRate.Denominator = 1u;
-	desc.BufferDesc.RefreshRate.Numerator	= 60u;
-	desc.BufferDesc.Scaling				    = DXGI_MODE_SCALING_UNSPECIFIED;
-	desc.BufferDesc.ScanlineOrdering		= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	desc.BufferDesc.Format					= m_backBufferFormat;
-	
-	desc.SampleDesc.Count   = static_cast<UINT>(m_eMsaa);
-	desc.SampleDesc.Quality = m_nMsaaQuality;
-
-	THROW_DX_IF_FAILS(m_pDxgiFactory->CreateSwapChain(
-		m_pDevice.Get(),
-		&desc,
-		m_pSwapChain.GetAddressOf()
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
+	THROW_DX_IF_FAILS(m_pDxgiFactory->CreateSwapChainForHwnd(
+		m_pCommandQueue.Get(),                  // NOT the device
+		m_pWindowsManager->GetWindowsHandle(),
+		&sd,
+		nullptr,
+		nullptr,
+		&swapChain1
 	));
+
+	THROW_DX_IF_FAILS(swapChain1.As(&m_pSwapChain));
 
 	return true;
 }
@@ -218,7 +239,7 @@ bool framework::DxRenderManager::CreateRenderTargetViews()
 	assert(m_pSwapChain && "Swapchain is not created but called to allocate");
 	
 	auto handle = m_pRtvHeap->GetCPUDescriptorHandleForHeapStart();
-	for (size_t i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
+	for (UINT i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
 	{
 		THROW_DX_IF_FAILS(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_pSwapChainBuffer[ i ])));
 		m_pDevice->CreateRenderTargetView(m_pSwapChainBuffer[ i ].Get(), nullptr, handle);
@@ -249,7 +270,6 @@ bool framework::DxRenderManager::CreateDepthStencilViews()
 	assert(m_pSwapChain && "Swapchain is not created but called to allocate");
 	assert(m_pDsvHeap	&& "DSV Heap is not created!");
 
-	//~ Allocate Buffers
 	D3D12_RESOURCE_DESC desc{};
 	desc.Dimension			= D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	desc.Format				= m_depthStencilFormat;
@@ -257,21 +277,17 @@ bool framework::DxRenderManager::CreateDepthStencilViews()
 	desc.Alignment			= 0u;
 	desc.Width				= m_pWindowsManager->GetWindowsWidth();
 	desc.Height				= m_pWindowsManager->GetWindowsHeight();
-	desc.DepthOrArraySize   = 1u;
-	desc.SampleDesc.Quality = 1u; // TODO: Create Dynamic msaa config
-	desc.SampleDesc.Count   = 0u;
+	desc.DepthOrArraySize	= 1u;
+	desc.SampleDesc.Count	= 1u;
+	desc.SampleDesc.Quality = 0u;
 	desc.Flags				= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	desc.Layout				= D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
 	D3D12_CLEAR_VALUE clear{};
-	clear.Color[ 0 ]		   = 0.14f;
-	clear.Color[ 1 ]		   = 0.71f;
-	clear.Color[ 2 ]		   = 0.04f;
-	clear.Color[ 3 ]		   = 1.f;
-	clear.DepthStencil.Depth   = 1.f;
-	clear.DepthStencil.Stencil = 0u;
-	clear.Format			   = m_depthStencilFormat;
-	
+	clear.Format				= m_depthStencilFormat;
+	clear.DepthStencil.Depth	= 1.0f;
+	clear.DepthStencil.Stencil	= 0;
+
 	D3D12_HEAP_PROPERTIES properties{};
 	properties.Type					= D3D12_HEAP_TYPE_DEFAULT;
 	properties.CPUPageProperty		= D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -283,22 +299,19 @@ bool framework::DxRenderManager::CreateDepthStencilViews()
 		&properties,
 		D3D12_HEAP_FLAG_NONE,
 		&desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&clear,
 		IID_PPV_ARGS(m_pDepthStenchilBuffer.GetAddressOf())
 	));
 
-	//~ Create Logical Wrapper
 	D3D12_DEPTH_STENCIL_VIEW_DESC view{};
 	view.Flags				= D3D12_DSV_FLAG_NONE;
 	view.Format				= m_depthStencilFormat;
-	view.Texture2D.MipSlice = 0u;
 	view.ViewDimension		= D3D12_DSV_DIMENSION_TEXTURE2D;
+	view.Texture2D.MipSlice = 0u;
 
 	auto handle = m_pDsvHeap->GetCPUDescriptorHandleForHeapStart();
-	m_pDevice->CreateDepthStencilView(m_pDepthStenchilBuffer.Get(),
-									  &view,
-									  handle);
+	m_pDevice->CreateDepthStencilView(m_pDepthStenchilBuffer.Get(), &view, handle);
 
 	return true;
 }
@@ -314,7 +327,7 @@ bool framework::DxRenderManager::CreateViewport()
 	m_viewport.MinDepth = 0.0f;
 
 	m_scissorRect = { 0, 0, 
-		m_pWindowsManager->GetWindowsWidth(),
+		m_pWindowsManager->GetWindowsWidth (),
 		m_pWindowsManager->GetWindowsHeight() };
 
 	return true;
@@ -322,17 +335,26 @@ bool framework::DxRenderManager::CreateViewport()
 
 void framework::DxRenderManager::FlushCommandQueue()
 {
+	if (!m_pFence) return;
+	if (!m_pCommandQueue) return;
 	m_nCurrentFence++;
-
 	THROW_DX_IF_FAILS(m_pCommandQueue->Signal(m_pFence.Get(), m_nCurrentFence));
 
 	if (m_pFence->GetCompletedValue() < m_nCurrentFence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, 0u, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, 0u, EVENT_ALL_ACCESS);
 		THROW_DX_IF_FAILS(m_pFence->SetEventOnCompletion(m_nCurrentFence, eventHandle));
 
-		WaitForSingleObject(eventHandle, INFINITE);
+		DWORD waitResult = WaitForSingleObject(eventHandle, INFINITE);
+		DWORD winErr = GetLastError();
 		CloseHandle(eventHandle);
+
+		if (waitResult != WAIT_OBJECT_0)
+		{
+			logger::error("Fence wait failed! WaitForSingleObject returned: {}", waitResult);
+			logger::error("Win32 error: {}", winErr);
+			THROW_DX_IF_FAILS(HRESULT_FROM_WIN32(winErr));
+		}
 	}
 }
 
@@ -405,10 +427,10 @@ void framework::DxRenderManager::LogAdapters()
 
 	for (size_t j = 0; j < adapters.size(); j++)
 	{
-		LogAdapterOuputs(adapters[ i ]);
-		if (adapters[ i ])
+		LogAdapterOuputs(adapters[ j ]);
+		if (adapters[ j ])
 		{
-			adapters[ i ]->Release();
+			adapters[ j ]->Release();
 		}
 	}
 }

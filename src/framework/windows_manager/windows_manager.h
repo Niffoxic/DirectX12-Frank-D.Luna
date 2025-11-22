@@ -37,11 +37,8 @@ namespace framework
 	{
 	public:
 		//~ ctor and dtor
-		 DxWindowsManager();
+		 DxWindowsManager(_In_ const DX12_WINDOWS_MANAGER_CREATE_DESC& desc);
 		 ~DxWindowsManager() noexcept;
-
-		DxWindowsManager(_In_ const DX12_WINDOWS_MANAGER_CREATE_DESC& desc);
-
 		//~ copy and move
 		DxWindowsManager(_In_ const DxWindowsManager&) = delete;
 		DxWindowsManager(_Inout_ DxWindowsManager&&)   = delete;
@@ -61,18 +58,15 @@ namespace framework
 		void OnFrameBegin(_In_ float deltaTime) noexcept;
 		void OnFrameEnd() noexcept;
 
+		DxMouseInputs	 Mouse{};
+		DxKeyboardInputs Keyboard{};
+
 		//~ Getters
 		_NODISCARD _Ret_maybenull_ _Success_(return != nullptr)
 		HWND GetWindowsHandle		() const noexcept;
 		
 		_NODISCARD _Ret_maybenull_ _Success_(return != nullptr)
 		HINSTANCE GetWindowsInstance() const noexcept;
-
-		_NODISCARD _Ret_maybenull_ _Success_(return != nullptr)
-		DxKeyboardInputs* GetKeyboard() const;
-
-		_NODISCARD _Ret_maybenull_ _Success_(return != nullptr)
-		DxMouseInputs*	  GetMouse   () const;
 
 		_NODISCARD _Check_return_
 		float GetAspectRatio		() const noexcept;
@@ -91,6 +85,13 @@ namespace framework
 		void SetWindowTitle			(_In_ const std::wstring& title)		 noexcept;
 		void SetWindowMessageOnTitle(_In_ const std::wstring& message) const noexcept;
 
+	private:
+		_NODISCARD _Check_return_ _Must_inspect_result_ _Success_(return != 0)
+		bool InitWindowScreen();
+
+		void TransitionToFullScreen	   ()		noexcept;
+		void TransitionToWindowedScreen() const noexcept;
+
 		//~ message proc
 		_NODISCARD
 		LRESULT MessageHandler(
@@ -99,12 +100,19 @@ namespace framework
 			_In_ WPARAM wParam,
 			_In_ LPARAM lParam) noexcept;
 
-	private:
-		_NODISCARD _Check_return_ _Must_inspect_result_ _Success_(return != 0)
-		bool InitWindowScreen();
+		_Function_class_(WINDOWS_CALLBACK)
+		static LRESULT CALLBACK WindowProcThunk(
+			_In_ HWND   hwnd,
+			_In_ UINT   msg,
+			_In_ WPARAM wParam,
+			_In_ LPARAM lParam) noexcept;
 
-		void TransitionToFullScreen	   ()		noexcept;
-		void TransitionToWindowedScreen() const noexcept;
+		_Function_class_(WINDOWS_CALLBACK)
+		static LRESULT CALLBACK WindowProcSetup(
+				_In_ HWND   hwnd,
+				_In_ UINT   message,
+				_In_ WPARAM wParam,
+				_In_ LPARAM lParam);
 
 	private:
 		struct
@@ -120,9 +128,6 @@ namespace framework
 		HWND			m_pWindowsHandle  { nullptr };
 		HINSTANCE		m_pWindowsInstance{ nullptr };
 		WINDOWPLACEMENT m_WindowPlacement { sizeof(m_WindowPlacement) };
-		
-		std::unique_ptr<DxMouseInputs>	  m_pMouse;
-		std::unique_ptr<DxKeyboardInputs> m_pKeyboard;
 	};
 
 } // namespace framework

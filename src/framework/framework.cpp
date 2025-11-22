@@ -101,6 +101,7 @@ namespace framework
 	bool IFramework::CreateManagers(const DX_FRAMEWORK_CONSTRUCT_DESC& desc)
 	{
 		m_pWindowsManager = std::make_unique<DxWindowsManager>(desc.WindowsDesc);
+		m_pRenderManager  = std::make_unique<DxRenderManager>(m_pWindowsManager.get());
 		return true;
 	}
 
@@ -118,17 +119,30 @@ namespace framework
 		if (m_pWindowsManager && !m_pWindowsManager->Initialize())
 		{
 			logger::error("Failed to initialize Windows Manager!");
-			return;
 		}
+
+		if (m_pRenderManager && !m_pRenderManager->Initialize())
+		{
+			logger::error("Failed to Initialize Render Manager");
+		}
+
+		logger::success("All Managers initialized.");
 	}
 
 	void framework::IFramework::ReleaseManagers()
 	{
 		logger::warning("Closing Application!");
+
 		if (m_pWindowsManager && !m_pWindowsManager->Release())
 		{
 			logger::error("Failed to Release Windows Manager!");
 		}
+
+		if (m_pRenderManager && !m_pRenderManager->Release())
+		{
+			logger::error("Failed to release render manager");
+		}
+
 		logger::close();
 	}
 
@@ -139,6 +153,11 @@ namespace framework
 		{
 			m_pWindowsManager->OnFrameBegin(deltaTime);
 		}
+
+		if (m_pRenderManager)
+		{
+			m_pRenderManager->OnFrameBegin(deltaTime);
+		}
 	}
 
 	void IFramework::ManagerFrameEnd()
@@ -146,6 +165,10 @@ namespace framework
 		if (m_pWindowsManager)
 		{
 			m_pWindowsManager->OnFrameEnd();
+		}
+		if (m_pRenderManager)
+		{
+			m_pRenderManager->OnFrameEnd();
 		}
 	}
 
