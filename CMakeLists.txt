@@ -16,6 +16,14 @@ file(GLOB_RECURSE SRC_FILES
 
 add_executable (application WIN32 ${SRC_FILES})
 
+# move shaders
+add_custom_command(
+    TARGET application POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+            $<TARGET_FILE_DIR:application>/shaders
+)
+
 # Properties
 set_property(TARGET application PROPERTY CXX_STANDARD 20)
 set_property(TARGET application PROPERTY CXX_STANDARD_REQUIRED ON)

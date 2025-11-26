@@ -2,6 +2,7 @@
 
 #include "framework/framework.h"
 #include "layer/chapter_4/draw_init.h"
+#include "layer/chapter_6/draw_box.h"
 #include <memory>
 
 namespace framework
@@ -23,5 +24,6 @@ namespace framework
 
 	private:
 		std::unique_ptr<InitDirectX> m_drawChapter4{ nullptr };
+		std::unique_ptr<Draw3DBox>   m_drawChapter6{ nullptr };
 	};
 }

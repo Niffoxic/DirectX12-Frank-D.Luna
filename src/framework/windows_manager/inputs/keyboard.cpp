@@ -1,5 +1,4 @@
 #include "keyboard.h"
-#include "keyboard.h"
 #include <cstring>
 
 namespace framework
@@ -37,7 +36,7 @@ namespace framework
             if (m_keyDown[ key ])
             {
                 m_keyPressed[ key ] = true;
-                m_keyDown[ key ] = false;
+                m_keyDown   [ key ] = false;
             }
             return true;
         }

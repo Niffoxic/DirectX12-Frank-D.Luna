@@ -169,7 +169,7 @@ bool DxWindowsManager::InitWindowScreen()
 		wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
 	}
 	wc.hCursor		 = LoadCursor(nullptr, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
 	wc.lpszMenuName  = nullptr;
 	wc.lpszClassName = m_config.Title.c_str();
 
@@ -193,7 +193,7 @@ bool DxWindowsManager::InitWindowScreen()
 		return false;
 	}
 
-	int adjustedWidth = rect.right - rect.left;
+	int adjustedWidth  = rect.right  - rect.left;
 	int adjustedHeight = rect.bottom - rect.top;
 
 	m_pWindowsHandle = CreateWindowEx(
@@ -235,7 +235,8 @@ LRESULT DxWindowsManager::MessageHandler(HWND   hwnd,
 	{
 		m_config.Width  = LOWORD(lParam);
 		m_config.Height = HIWORD(lParam);
-		EventQueue::Post<WINDOW_RESIZE_EVENT>({ m_config.Width, m_config.Height });
+		EventQueue::Post<WINDOW_RESIZE_EVENT>
+			(WINDOW_RESIZE_EVENT{ m_config.Width, m_config.Height });
 		return S_OK;
 	}
 	case WM_ENTERSIZEMOVE: // clicked mouse on title bar
@@ -263,8 +264,8 @@ LRESULT DxWindowsManager::MessageHandler(HWND   hwnd,
 
 _Use_decl_annotations_
 LRESULT framework::DxWindowsManager::WindowProcThunk(
-	HWND hwnd,
-	UINT msg,
+	HWND   hwnd,
+	UINT   msg,
 	WPARAM wParam,
 	LPARAM lParam) noexcept
 {

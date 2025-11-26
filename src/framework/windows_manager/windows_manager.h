@@ -11,10 +11,10 @@
 
 namespace framework
 {
-	enum class EScreenState: uint8_t
+	enum class EScreenState: bool
 	{
-		Windowed = 0,
-		Fullscreen
+		Windowed   = false,
+		Fullscreen = true
 	};
 
 	enum class EProcessedMessageState : uint8_t
@@ -26,7 +26,7 @@ namespace framework
 
 	typedef struct _DX12_WINDOWS_MANAGER_CREATE_DESC
 	{
-								 std::wstring WindowTitle{ L"PixelEngine" };
+								 std::wstring WindowTitle{ L"DirectX12" };
 		_Field_range_(100, 1920) UINT		  Width      { 1280u };
 		_Field_range_(100, 1080) UINT		  Height     { 720u };
 		_Field_range_(0, 200)    UINT		  IconId     { 0u }; //~ 0 means no icon is attached
@@ -117,12 +117,12 @@ namespace framework
 	private:
 		struct
 		{
-			std::wstring Title { L"DirectX 12 Application" };
-			std::wstring ClassName	  { L"DXFramework" };
-			UINT		 Width { 0u };
-			UINT		 Height{ 0u };
-			UINT	     IconID		  { 0u };
-			EScreenState ScreenState  { EScreenState::Windowed };
+			std::wstring Title		{ L"DirectX 12 Application" };
+			std::wstring ClassName	{ L"DXFramework" };
+			UINT		 Width		{ 0u };
+			UINT		 Height		{ 0u };
+			UINT	     IconID		{ 0u };
+			EScreenState ScreenState{ EScreenState::Windowed };
 		} m_config;
 
 		HWND			m_pWindowsHandle  { nullptr };

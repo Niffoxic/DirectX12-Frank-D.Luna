@@ -68,6 +68,7 @@ namespace framework
 	private:
 		//~ create resources
 		bool InitDirectX						 ();
+		bool SearchAdapter						 ();
 		bool ConfigureMSAA						 ();
 		bool CreateCommandObjects				 ();
 		bool CreateSwapChain					 ();
@@ -87,9 +88,11 @@ namespace framework
 		DXGI_FORMAT     m_backBufferFormat  { DXGI_FORMAT_R8G8B8A8_UNORM    };
 		DXGI_FORMAT     m_depthStencilFormat{ DXGI_FORMAT_D24_UNORM_S8_UINT };
 
+		Microsoft::WRL::ComPtr<IDXGIAdapter>				m_pAdapter{ nullptr };
+		std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>>	m_adapters{};
 		Microsoft::WRL::ComPtr<IDXGIFactory4>   m_pDxgiFactory{ nullptr };
-		Microsoft::WRL::ComPtr<IDXGISwapChain> m_pSwapChain	 { nullptr };
-		Microsoft::WRL::ComPtr<ID3D12Device>   m_pDevice	 { nullptr };
+		Microsoft::WRL::ComPtr<IDXGISwapChain>	m_pSwapChain  { nullptr };
+		Microsoft::WRL::ComPtr<ID3D12Device>	m_pDevice	  { nullptr };
 
 		static constexpr unsigned SWAP_CHAIN_BUFFER_COUNT{ 2u };
 		
@@ -101,6 +104,8 @@ namespace framework
 		UINT m_nCurrentFence{ 0u };
 
 		// cmd resource
+		Microsoft::WRL::ComPtr<ID3D12CommandQueue>		  m_pCopyQueue{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D12CommandQueue>		  m_pComputeQueue{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>		  m_pCommandQueue{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator>    m_pCommandAlloc{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_pCommandList { nullptr };
@@ -108,7 +113,7 @@ namespace framework
 		//~ Render Resource
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pRtvHeap			   { nullptr };
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_pDsvHeap			   { nullptr };
-		Microsoft::WRL::ComPtr<ID3D12Resource>		 m_pDepthStenchilBuffer{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D12Resource>		 m_pDepthStencilBuffer{ nullptr };
 
 		D3D12_VIEWPORT m_viewport{};
 		D3D12_RECT     m_scissorRect{};

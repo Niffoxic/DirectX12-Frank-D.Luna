@@ -20,7 +20,6 @@ namespace framework
         {
             RAWINPUTDEVICE device = { 0x01, 0x02, 0, hWnd };
             RegisterRawInputDevices(&device, 1u, sizeof(device));
-
             m_pWindowHandle = hWnd;
         }
     }
@@ -106,7 +105,7 @@ namespace framework
         }
         case WM_INPUT:
         {
-            //~ thank you microsoft docuemntation
+            //~ thank you microsoft documentation
             UINT size = 0;
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
             if (size > 0)

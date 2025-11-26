@@ -66,7 +66,7 @@ namespace framework
 		_Check_return_ _NODISCARD bool IsAltPressed  () const noexcept;
 		_Check_return_ _NODISCARD bool IsSuperPressed() const noexcept;
 
-		_Check_return_ _NODISCARD bool IsInside(_FOX_VK_VALID int virtualKey) const noexcept { return virtualKey >= 0 && virtualKey < MAX_KEYBOARD_INPUTS; }
+		_Check_return_ _NODISCARD bool IsInside(_FOX_VK_VALID unsigned int virtualKey) const noexcept { return virtualKey >= 0u && virtualKey < MAX_KEYBOARD_INPUTS; }
 
 	private:
 		bool m_keyDown	  [ MAX_KEYBOARD_INPUTS ]{};
