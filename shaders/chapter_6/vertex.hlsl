@@ -1,41 +1,54 @@
 cbuffer Primiary : register(b0)
 {
-    float    u_time;
-    float3   padding;
-    float2   u_resolution;
-    float2   u_mouse;
+    float u_time;
+    float3 padding;
+    float2 u_resolution;
+    float2 u_mouse;
     float4x4 u_WorldViewProjectMatrix;
+
+    float3 u_EyePosW;
+    float padEye;
+
+    float3 u_DirLightDirection;
+    float padDir0;
+    float3 u_DirLightColor;
+    float padDir1;
+
+    float3 u_PointLightPosition;
+    float u_PointLightRange;
+    float3 u_PointLightColor;
+    float padPoint;
 };
 
 struct VertexInput
 {
     float3 Position : POSITION;
-    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
 };
 
 struct VertexOutput
 {
     float4 Position : SV_POSITION;
-    float4 Color : COLOR;
+    float3 PosW : POSITION;
+    float3 NormalW : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
 };
 
 VertexOutput main(VertexInput input)
 {
     VertexOutput output;
 
-    float3 p = input.Position;
+    float4 posW = float4(input.Position, 1.0f);
+    posW.y = sin(posW.y * u_time);
 
-    float2 mouseNorm = u_mouse / u_resolution;
-
-    float scaleX = lerp(0.5f, 1.5f, mouseNorm.x);
-    float scaleY = lerp(0.5f, 1.5f, mouseNorm.y);
-
-    float3 pDeformed = p;
-    pDeformed.x *= scaleX;
-    pDeformed.y *= scaleY;
-
-    output.Position = mul(float4(pDeformed, 1.0f), u_WorldViewProjectMatrix);
-    output.Color = input.Color;
+    output.Position = mul(posW, u_WorldViewProjectMatrix);
+    output.PosW = input.Position;
+    output.NormalW = normalize(input.Normal);
+    output.TexCoords = input.TexCoords;
+    output.Tangent = input.Tangent;
 
     return output;
 }

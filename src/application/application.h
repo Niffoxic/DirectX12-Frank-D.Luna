@@ -5,6 +5,8 @@
 #include "layer/chapter_6/draw_box.h"
 #include <memory>
 
+#include "layer/chapter_7/draw_shapes.h"
+
 namespace framework
 {
 	class Application final : public IFramework
@@ -25,5 +27,6 @@ namespace framework
 	private:
 		std::unique_ptr<InitDirectX> m_drawChapter4{ nullptr };
 		std::unique_ptr<Draw3DBox>   m_drawChapter6{ nullptr };
+		std::unique_ptr<DrawShapes>  m_drawChapter7{ nullptr };
 	};
 }

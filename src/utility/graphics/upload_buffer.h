@@ -36,7 +36,7 @@ namespace framework
 			const UINT64 bufferSize = m_nElementCount * m_nElementByteSize;
 
 			D3D12_HEAP_PROPERTIES properties{};
-			properties.Type					= D3D12_HEAP_TYPE_GPU_UPLOAD;
+			properties.Type					= D3D12_HEAP_TYPE_UPLOAD;
 			properties.CPUPageProperty		= D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 			properties.CreationNodeMask		= 1u;
@@ -90,6 +90,8 @@ namespace framework
 			memcpy(&m_pMappedData[ elementIndex * m_nElementByteSize ], &data, sizeof(T));
 		}
 
+		UINT64 GetElementByteSize() const { return m_nElementByteSize; }
+
 		//~ Getters
 		ID3D12Resource* GetResource() const { return m_pUploadResource.Get(); }
 
@@ -101,4 +103,3 @@ namespace framework
 		UploadBufferType					   m_eBufferType	 { UploadBufferType::VertexIndexOrStructured };
 	};
 } // namespace framework
-

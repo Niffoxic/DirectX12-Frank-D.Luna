@@ -11,8 +11,9 @@ namespace framework
 	_Use_decl_annotations_
 	bool Application::InitApplication()
 	{
-		//m_drawChapter4 = std::make_unique<InitDirectX>(m_pRenderManager.get());
+		m_drawChapter4 = std::make_unique<InitDirectX>(m_pRenderManager.get());
 		m_drawChapter6 = std::make_unique<Draw3DBox>(m_pRenderManager.get());
+		m_drawChapter7 = std::make_unique<DrawShapes>(m_pRenderManager.get());
 		return true;
 	}
 
@@ -29,6 +30,8 @@ namespace framework
 	_Use_decl_annotations_
 	void Application::Tick(float deltaTime)
 	{
+		//m_drawChapter7->Draw(deltaTime);
 		m_drawChapter6->Draw(deltaTime);
+		//m_drawChapter4->Draw(deltaTime);
 	}
 }

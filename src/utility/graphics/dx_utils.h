@@ -104,24 +104,24 @@ namespace framework
         ComPtr<ID3D12Resource> defaultBuffer;
 
         D3D12_HEAP_PROPERTIES defaultHeap{};
-        defaultHeap.Type = D3D12_HEAP_TYPE_DEFAULT;
-        defaultHeap.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        defaultHeap.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+        defaultHeap.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
         defaultHeap.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-        defaultHeap.CreationNodeMask = 1;
-        defaultHeap.VisibleNodeMask = 1;
+        defaultHeap.CreationNodeMask     = 1u;
+        defaultHeap.VisibleNodeMask      = 1u;
 
         D3D12_RESOURCE_DESC bufferDesc{};
-        bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        bufferDesc.Alignment = 0;
-        bufferDesc.Width = byteSize;
-        bufferDesc.Height = 1;
-        bufferDesc.DepthOrArraySize = 1;
-        bufferDesc.MipLevels = 1;
-        bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-        bufferDesc.SampleDesc.Count = 1;
-        bufferDesc.SampleDesc.Quality = 0;
-        bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        bufferDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+        bufferDesc.Alignment          = 0u;
+        bufferDesc.Width              = byteSize;
+        bufferDesc.Height             = 1u;
+        bufferDesc.DepthOrArraySize   = 1u;
+        bufferDesc.MipLevels          = 1u;
+        bufferDesc.Format             = DXGI_FORMAT_UNKNOWN;
+        bufferDesc.SampleDesc.Count   = 1u;
+        bufferDesc.SampleDesc.Quality = 0u;
+        bufferDesc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        bufferDesc.Flags              = D3D12_RESOURCE_FLAG_NONE;
 
         THROW_DX_IF_FAILS(
             device->CreateCommittedResource(
@@ -134,11 +134,11 @@ namespace framework
         );
 
         D3D12_HEAP_PROPERTIES uploadHeap{};
-        uploadHeap.Type = D3D12_HEAP_TYPE_UPLOAD;
-        uploadHeap.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        uploadHeap.Type                 = D3D12_HEAP_TYPE_UPLOAD;
+        uploadHeap.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
         uploadHeap.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-        uploadHeap.CreationNodeMask = 1;
-        uploadHeap.VisibleNodeMask = 1;
+        uploadHeap.CreationNodeMask     = 1u;
+        uploadHeap.VisibleNodeMask      = 1u;
 
         THROW_DX_IF_FAILS(
             device->CreateCommittedResource(
@@ -151,17 +151,17 @@ namespace framework
         );
 
         D3D12_SUBRESOURCE_DATA subResourceData{};
-        subResourceData.pData = initData;
-        subResourceData.RowPitch = byteSize;
-        subResourceData.SlicePitch = byteSize;
+        subResourceData.pData       = initData;
+        subResourceData.RowPitch    = byteSize;
+        subResourceData.SlicePitch  = byteSize;
 
         D3D12_RESOURCE_BARRIER toCopyDest{};
-        toCopyDest.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        toCopyDest.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        toCopyDest.Transition.pResource = defaultBuffer.Get();
-        toCopyDest.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        toCopyDest.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        toCopyDest.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        toCopyDest.Type                     = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        toCopyDest.Flags                    = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        toCopyDest.Transition.pResource     = defaultBuffer.Get();
+        toCopyDest.Transition.Subresource   = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        toCopyDest.Transition.StateBefore   = D3D12_RESOURCE_STATE_COMMON;
+        toCopyDest.Transition.StateAfter    = D3D12_RESOURCE_STATE_COPY_DEST;
 
         cmdList->ResourceBarrier(1, &toCopyDest);
 
@@ -169,19 +169,19 @@ namespace framework
             cmdList,
             defaultBuffer.Get(),
             uploadBuffer.Get(),
-            0, 0, 1,
+            0u, 0u, 1u,
             &subResourceData
         );
 
         D3D12_RESOURCE_BARRIER toGenericRead{};
-        toGenericRead.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        toGenericRead.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        toGenericRead.Transition.pResource = defaultBuffer.Get();
+        toGenericRead.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        toGenericRead.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        toGenericRead.Transition.pResource   = defaultBuffer.Get();
         toGenericRead.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
         toGenericRead.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        toGenericRead.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+        toGenericRead.Transition.StateAfter  = D3D12_RESOURCE_STATE_GENERIC_READ;
 
-        cmdList->ResourceBarrier(1, &toGenericRead);
+        cmdList->ResourceBarrier(1u, &toGenericRead);
         return defaultBuffer;
     }
 }

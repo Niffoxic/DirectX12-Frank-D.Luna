@@ -6,6 +6,9 @@
 #include "framework/event/event_queue.h"
 #include "framework/event/event_windows.h"
 
+#include "imgui.h"
+#include "backends/imgui_impl_win32.h"
+
 using namespace framework;
 
 DxWindowsManager::~DxWindowsManager()
@@ -220,12 +223,15 @@ bool DxWindowsManager::InitWindowScreen()
 	return true;
 }
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 _Use_decl_annotations_
 LRESULT DxWindowsManager::MessageHandler(HWND   hwnd,
 										 UINT   message,
 										 WPARAM wParam,
 										 LPARAM lParam) noexcept
 {
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, message, wParam, lParam)) return S_OK;
 	if (Keyboard.ProcessMessage(message, wParam, lParam)) return S_OK;
 	if (Mouse   .ProcessMessage(message, wParam, lParam)) return S_OK;
 
